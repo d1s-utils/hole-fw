@@ -1,0 +1,3 @@
+hole-fw:
+  server:
+    base-url: "http://localhost:9191/"

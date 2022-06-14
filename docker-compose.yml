@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  hole:
+    image: hole-fw:0.1.0-beta.0
+    container_name: hole-fw
+    ports:
+      - "9193:9193"
+    restart: on-failure

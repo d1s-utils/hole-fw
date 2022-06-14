@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: "hole-fw"
+
+  main:
+    banner-mode: off
+
+server:
+  port: 9193
