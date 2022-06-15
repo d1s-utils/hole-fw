@@ -1,3 +1,7 @@
+logging:
+  level:
+    dev.d1s: debug
+
 hole-fw:
   server:
     base-url: "http://localhost:9191/"

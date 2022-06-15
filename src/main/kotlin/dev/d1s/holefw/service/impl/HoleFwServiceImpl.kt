@@ -5,12 +5,19 @@ import com.jakewharton.picnic.TextAlignment
 import com.jakewharton.picnic.renderText
 import com.jakewharton.picnic.table
 import dev.d1s.hole.client.core.HoleClient
+import dev.d1s.hole.client.entity.storageObject.RawStorageObject
 import dev.d1s.hole.client.entity.storageObject.StorageObject
+import dev.d1s.holefw.constant.CELL_PADDING_RIGHT
+import dev.d1s.holefw.constant.NO_VALUE
+import dev.d1s.holefw.constant.SHORT_VALUE_LENGTH
+import dev.d1s.holefw.exception.withExceptionWrapping
 import dev.d1s.holefw.service.HoleFwService
-import dev.d1s.teabag.stdlib.text.padding
+import dev.d1s.holefw.util.appendSeparator
+import dev.d1s.holefw.util.buildResponse
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.io.OutputStream
 import kotlin.system.measureTimeMillis
 
 @Service
@@ -19,146 +26,123 @@ class HoleFwServiceImpl : HoleFwService {
     @set:Autowired
     lateinit var holeClient: HoleClient
 
-    override fun getAvailableDirectories(): String {
+    override fun getAvailableDirectories(): String = buildResponse {
         var availableGroups: Set<String>
 
-        val time = runBlocking {
+        it.executionTime = runBlocking {
             measureTimeMillis {
-                availableGroups = holeClient.getAvailableGroups()
+                availableGroups = withExceptionWrapping {
+                    holeClient.getAvailableGroups()
+                }
             }
         }
 
-        return renderTable {
-            header {
-                row("Available groups")
-            }
+        append(
+            renderTable {
+                header {
+                    row("Available groups")
+                }
 
-            availableGroups.forEach {
-                row(it)
-            }
+                availableGroups.forEach { group ->
+                    row(group)
+                }
 
-            if (availableGroups.isEmpty()) {
-                row("There are no groups available yet.")
+                if (availableGroups.isEmpty()) {
+                    row("There are no groups available yet.")
+                }
             }
-        }.appendExecutionTime(time)
+        )
     }
 
-    override fun getObjectsByGroup(group: String): String {
+    override fun getObjectsByGroup(group: String): String = buildResponse {
         var objects: Set<StorageObject>
 
-        val time = runBlocking {
+        it.executionTime = runBlocking {
             measureTimeMillis {
-                objects = holeClient.getAllObjects(group)
+                objects = withExceptionWrapping {
+                    holeClient.getAllObjects(group)
+                }
             }
         }
 
-        return buildString {
-            objects.forEach {
-                val renderedText = renderTable {
-                    row("ID", it.id)
 
-                    row("Created at", it.creationTime)
+        objects.forEach { obj ->
+            val renderedText = renderTable {
+                rowWithIndent(
+                    "ID",
+                    obj.id
+                )
 
-                    row("Name", it.name)
+                rowWithIndent(
+                    "Created at",
+                    obj.creationTime.toString()
+                )
 
-                    row(
-                        "Encrypted",
-                        if (it.encrypted) {
-                            "Yes"
-                        } else {
-                            "No"
-                        }
-                    )
+                rowWithIndent(
+                    "Name",
+                    obj.name
+                )
 
-                    row(
-                        "Digest",
-                        it.digest.short()
-                    )
-
-                    row(
-                        "Last access",
-                        it.accesses.firstOrNull()?.time ?: NO_VALUE
-                    )
-
-                    if (objects.isEmpty()) {
-                        row {
-                            repeat(
-                                COLUMNS
-                            ) {
-                                cell(NO_VALUE)
-                            }
-                        }
-                    }
-                }
-
-                append(renderedText)
-
-                if (it != objects.last()) {
-                    append(
-                        SEPARATOR.repeat(
-                            renderedText.lines().maxOf { line ->
-                                line.length
-                            }
-                        ).padding {
-                            top = BASE_PADDING
-                            bottom = BASE_PADDING
-                        }
-                    )
-                }
-            }
-
-            if (objects.isEmpty()) {
-                append(
-                    renderTable {
-                        row()
-                        row("There are no objects available yet.")
+                rowWithIndent(
+                    "Encrypted",
+                    if (obj.encrypted) {
+                        "Yes"
+                    } else {
+                        "No"
                     }
                 )
+
+                rowWithIndent(
+                    "Digest",
+                    obj.digest.short()
+                )
+
+                rowWithIndent(
+                    "Last access",
+                    obj.accesses.firstOrNull()?.time?.toString() ?: NO_VALUE
+                )
             }
-        }.appendExecutionTime(time)
+
+            append(renderedText)
+
+            if (obj != objects.last()) {
+                appendSeparator()
+            }
+        }
+
+        if (objects.isEmpty()) {
+            append(
+                renderTable {
+                    row("There are no objects available yet.")
+                }
+            )
+        }
     }
+
+    override fun readRawObject(id: String, encryptionKey: String?, out: OutputStream): RawStorageObject =
+        withExceptionWrapping {
+            runBlocking {
+                holeClient.getRawObject(id, out, encryptionKey)
+            }
+        }
 
     fun String.short() = this.takeLast(SHORT_VALUE_LENGTH)
 
-    private fun String.appendExecutionTime(time: Long) = this + renderTable(true) {
-        row("Fetched in $time ms.")
-    }
-
-    private fun renderTable(adjustBottom: Boolean = false, block: TableDsl.() -> Unit) = table {
+    private fun renderTable(block: TableDsl.() -> Unit) = table {
         cellStyle {
-            paddingLeft = CELL_PADDING
-            paddingRight = CELL_PADDING
             alignment = TextAlignment.MiddleLeft
         }
 
         block()
-    }.renderText().setPadding(adjustBottom)
+    }.renderText()
 
-    private fun String.setPadding(adjustBottom: Boolean) = this.padding {
-        top = BASE_PADDING
+    private fun TableDsl.rowWithIndent(key: String, value: String) {
+        row {
+            cell(key) {
+                paddingRight = CELL_PADDING_RIGHT
+            }
 
-        bottom = BASE_PADDING + if (adjustBottom) {
-            1
-        } else {
-            0
+            cell(value)
         }
-
-        left = BASE_PADDING
-
-        right = BASE_PADDING
-    }
-
-    private companion object {
-        private const val BASE_PADDING = 1
-
-        private const val CELL_PADDING = 1
-
-        private const val SHORT_VALUE_LENGTH = 8
-
-        private const val COLUMNS = 7
-
-        private const val NO_VALUE = "-"
-
-        private const val SEPARATOR = "-"
     }
 }
