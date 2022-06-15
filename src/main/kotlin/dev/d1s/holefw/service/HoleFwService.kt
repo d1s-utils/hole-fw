@@ -9,5 +9,10 @@ interface HoleFwService {
 
     fun getObjectsByGroup(group: String): String
 
-    fun readRawObject(id: String, encryptionKey: String?, out: OutputStream): RawStorageObject
+    fun readRawObject(
+        group: String,
+        id: String,
+        encryptionKey: String?,
+        out: OutputStream
+    ): RawStorageObject
 }

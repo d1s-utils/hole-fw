@@ -7,9 +7,12 @@ import com.jakewharton.picnic.table
 import dev.d1s.hole.client.core.HoleClient
 import dev.d1s.hole.client.entity.storageObject.RawStorageObject
 import dev.d1s.hole.client.entity.storageObject.StorageObject
+import dev.d1s.hole.client.exception.HoleClientException
 import dev.d1s.holefw.constant.CELL_PADDING_RIGHT
 import dev.d1s.holefw.constant.NO_VALUE
 import dev.d1s.holefw.constant.SHORT_VALUE_LENGTH
+import dev.d1s.holefw.exception.MultipleStorageObjectsException
+import dev.d1s.holefw.exception.StorageObjectNotFoundByNameException
 import dev.d1s.holefw.exception.withExceptionWrapping
 import dev.d1s.holefw.service.HoleFwService
 import dev.d1s.holefw.util.appendSeparator
@@ -119,10 +122,42 @@ class HoleFwServiceImpl : HoleFwService {
         }
     }
 
-    override fun readRawObject(id: String, encryptionKey: String?, out: OutputStream): RawStorageObject =
+    override fun readRawObject(
+        group: String,
+        id: String,
+        encryptionKey: String?,
+        out: OutputStream
+    ): RawStorageObject =
         withExceptionWrapping {
             runBlocking {
-                holeClient.getRawObject(id, out, encryptionKey)
+                try {
+                    holeClient.getRawObject(id, out, encryptionKey)
+                } catch (e: HoleClientException) {
+                    holeClient.getRawObject(
+                        holeClient.getAllObjects(group)
+                            .filter {
+                                // ahem ahem...
+                                // Every aspect of IntelliJ IDEA has been designed to maximize developer productivity.
+                                // Together, intelligent coding assistance and ergonomic design make development
+                                // not only productive but also enjoyable.
+                                @Suppress("KotlinConstantConditions")
+                                it.name == id
+                            }.let {
+                                if (it.isEmpty()) {
+                                    throw StorageObjectNotFoundByNameException(id)
+                                }
+
+                                if (it.size > 1) {
+                                    throw MultipleStorageObjectsException()
+                                }
+
+                                it.first().id
+                            },
+                        out,
+                        encryptionKey
+                    )
+                }
+
             }
         }
 

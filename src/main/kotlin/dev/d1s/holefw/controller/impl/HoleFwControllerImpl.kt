@@ -30,6 +30,7 @@ class HoleFwControllerImpl : HoleFwController {
         response: HttpServletResponse
     ) {
         val rawObject = holeFwService.readRawObject(
+            group,
             id,
             encryptionKey,
             response.outputStream
