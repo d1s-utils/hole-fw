@@ -26,7 +26,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(kotlin("reflect"))
     implementation(kotlin("stdlib"))
-    implementation("com.github.hole-project:hole-kt:$holeKtVersion")
+    implementation("com.github.hole-project.hole-kt:spring-boot-starter-hole-kt:$holeKtVersion")
     implementation("com.jakewharton.picnic:picnic:$picnicVersion")
     implementation("dev.d1s.teabags:teabag-stdlib:$teabagsVersion")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

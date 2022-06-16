@@ -2,6 +2,6 @@ logging:
   level:
     dev.d1s: debug
 
-hole-fw:
+hole:
   server:
     base-url: "http://localhost:9191/"
