@@ -13,10 +13,10 @@ import dev.d1s.holefw.constant.NO_VALUE
 import dev.d1s.holefw.constant.SHORT_VALUE_LENGTH
 import dev.d1s.holefw.exception.MultipleStorageObjectsException
 import dev.d1s.holefw.exception.StorageObjectNotFoundByNameException
-import dev.d1s.holefw.exception.withExceptionWrapping
 import dev.d1s.holefw.service.HoleFwService
 import dev.d1s.holefw.util.appendSeparator
 import dev.d1s.holefw.util.buildResponse
+import dev.d1s.holefw.util.withExceptionHandling
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -34,7 +34,7 @@ class HoleFwServiceImpl : HoleFwService {
 
         it.executionTime = runBlocking {
             measureTimeMillis {
-                availableGroups = withExceptionWrapping {
+                availableGroups = withExceptionHandling {
                     holeClient.getAvailableGroups()
                 }
             }
@@ -62,7 +62,7 @@ class HoleFwServiceImpl : HoleFwService {
 
         it.executionTime = runBlocking {
             measureTimeMillis {
-                objects = withExceptionWrapping {
+                objects = withExceptionHandling {
                     holeClient.getAllObjects(group)
                 }
             }
@@ -126,9 +126,9 @@ class HoleFwServiceImpl : HoleFwService {
         group: String,
         id: String,
         encryptionKey: String?,
-        out: OutputStream
+        out: OutputStream,
     ): RawStorageObject =
-        withExceptionWrapping {
+        withExceptionHandling {
             runBlocking {
                 try {
                     holeClient.getRawObject(id, out, encryptionKey)
@@ -136,11 +136,6 @@ class HoleFwServiceImpl : HoleFwService {
                     holeClient.getRawObject(
                         holeClient.getAllObjects(group)
                             .filter {
-                                // ahem ahem...
-                                // Every aspect of IntelliJ IDEA has been designed to maximize developer productivity.
-                                // Together, intelligent coding assistance and ergonomic design make development
-                                // not only productive but also enjoyable.
-                                @Suppress("KotlinConstantConditions")
                                 it.name == id
                             }.let {
                                 if (it.isEmpty()) {
@@ -157,7 +152,6 @@ class HoleFwServiceImpl : HoleFwService {
                         encryptionKey
                     )
                 }
-
             }
         }
 

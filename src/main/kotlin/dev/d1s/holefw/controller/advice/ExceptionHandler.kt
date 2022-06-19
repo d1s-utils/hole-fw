@@ -41,13 +41,14 @@ class ExceptionHandler {
     private fun errorResponse(
         status: Int,
         e: ExecutionTimeAwareException,
-        message: String? = null
+        message: String? = null,
     ): ResponseEntity<String> = status(status)
         .contentType(MediaType.TEXT_PLAIN)
         .body(
             buildResponse {
                 it.executionTime = e.executionTime
 
+                append("Error: ")
                 append(message ?: e.message ?: "An error occurred.")
             }
         )
