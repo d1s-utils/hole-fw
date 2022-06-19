@@ -20,7 +20,7 @@ import dev.d1s.holefw.util.withExceptionHandling
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.io.OutputStream
+import javax.servlet.http.HttpServletResponse
 import kotlin.system.measureTimeMillis
 
 @Service
@@ -126,12 +126,19 @@ class HoleFwServiceImpl : HoleFwService {
         group: String,
         id: String,
         encryptionKey: String?,
-        out: OutputStream,
-    ): RawStorageObject =
+        content: HttpServletResponse,
+    ) {
+        val rawStorageObjectHandler = fun(rawStorageObject: RawStorageObject) {
+            content.contentType = rawStorageObject.contentType
+            content.setContentLengthLong(rawStorageObject.contentLength)
+        }
+
         withExceptionHandling {
             runBlocking {
+                val out = content.outputStream
+
                 try {
-                    holeClient.getRawObject(id, out, encryptionKey)
+                    holeClient.getRawObject(id, out, encryptionKey, rawStorageObjectHandler)
                 } catch (e: HoleClientException) {
                     holeClient.getRawObject(
                         holeClient.getAllObjects(group)
@@ -149,11 +156,13 @@ class HoleFwServiceImpl : HoleFwService {
                                 it.first().id
                             },
                         out,
-                        encryptionKey
+                        encryptionKey,
+                        rawStorageObjectHandler
                     )
                 }
             }
         }
+    }
 
     fun String.short() = this.takeLast(SHORT_VALUE_LENGTH)
 

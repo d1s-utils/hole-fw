@@ -1,7 +1,6 @@
 package dev.d1s.holefw.service
 
-import dev.d1s.hole.client.entity.storageObject.RawStorageObject
-import java.io.OutputStream
+import javax.servlet.http.HttpServletResponse
 
 interface HoleFwService {
 
@@ -13,6 +12,6 @@ interface HoleFwService {
         group: String,
         id: String,
         encryptionKey: String?,
-        out: OutputStream
-    ): RawStorageObject
+        content: HttpServletResponse,
+    )
 }

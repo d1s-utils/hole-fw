@@ -3,7 +3,6 @@ package dev.d1s.holefw.controller.impl
 import dev.d1s.holefw.controller.HoleFwController
 import dev.d1s.holefw.service.HoleFwService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.ResponseEntity.ok
 import org.springframework.web.bind.annotation.RestController
@@ -27,16 +26,13 @@ class HoleFwControllerImpl : HoleFwController {
         group: String,
         id: String,
         encryptionKey: String?,
-        response: HttpServletResponse
+        response: HttpServletResponse,
     ) {
-        val rawObject = holeFwService.readRawObject(
+        holeFwService.readRawObject(
             group,
             id,
             encryptionKey,
-            response.outputStream
+            response
         )
-
-        response.contentType = rawObject.contentType
-        response.status = HttpStatus.OK.value()
     }
 }
