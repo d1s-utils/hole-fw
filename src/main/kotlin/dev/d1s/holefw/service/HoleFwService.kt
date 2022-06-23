@@ -4,7 +4,7 @@ import javax.servlet.http.HttpServletResponse
 
 interface HoleFwService {
 
-    fun getAvailableDirectories(): String
+    fun getAvailableGroups(): String
 
     fun getObjectsByGroup(group: String): String
 
