@@ -5,3 +5,6 @@ const val MULTIPLE_STORAGE_OBJECTS_ERROR =
 
 const val STORAGE_OBJECT_NOT_FOUND_BY_NAME =
     "Storage object with name '%s' was not found."
+
+const val LISTING_NOT_ALLOWED_ERROR =
+    "Listing is not available for this group."

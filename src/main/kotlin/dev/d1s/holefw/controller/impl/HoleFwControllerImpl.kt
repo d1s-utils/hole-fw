@@ -15,7 +15,7 @@ class HoleFwControllerImpl : HoleFwController {
     lateinit var holeFwService: HoleFwService
 
     override fun getAvailableDirectories(): ResponseEntity<String> = ok(
-        holeFwService.getAvailableDirectories()
+        holeFwService.getAvailableGroups()
     )
 
     override fun getObjectsByGroup(group: String): ResponseEntity<String> = ok(

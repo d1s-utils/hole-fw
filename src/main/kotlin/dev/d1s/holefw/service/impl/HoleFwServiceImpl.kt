@@ -5,12 +5,16 @@ import com.jakewharton.picnic.TextAlignment
 import com.jakewharton.picnic.renderText
 import com.jakewharton.picnic.table
 import dev.d1s.hole.client.core.HoleClient
+import dev.d1s.hole.client.entity.metadata.Meta
+import dev.d1s.hole.client.entity.metadata.getValue
 import dev.d1s.hole.client.entity.storageObject.RawStorageObject
 import dev.d1s.hole.client.entity.storageObject.StorageObject
 import dev.d1s.hole.client.exception.HoleClientException
+import dev.d1s.holefw.constant.ALLOW_LISTING_PROPERTY
 import dev.d1s.holefw.constant.CELL_PADDING_RIGHT
 import dev.d1s.holefw.constant.NO_VALUE
 import dev.d1s.holefw.constant.SHORT_VALUE_LENGTH
+import dev.d1s.holefw.exception.ListingNotAllowedException
 import dev.d1s.holefw.exception.MultipleStorageObjectsException
 import dev.d1s.holefw.exception.StorageObjectNotFoundByNameException
 import dev.d1s.holefw.service.HoleFwService
@@ -29,13 +33,13 @@ class HoleFwServiceImpl : HoleFwService {
     @set:Autowired
     lateinit var holeClient: HoleClient
 
-    override fun getAvailableDirectories(): String = buildResponse {
+    override fun getAvailableGroups(): String = buildResponse {
         var availableGroups: Set<String>
 
         it.executionTime = runBlocking {
             measureTimeMillis {
                 availableGroups = withExceptionHandling {
-                    holeClient.getAvailableGroups()
+                    holeClient.getAllGroupNames()
                 }
             }
         }
@@ -63,7 +67,15 @@ class HoleFwServiceImpl : HoleFwService {
         it.executionTime = runBlocking {
             measureTimeMillis {
                 objects = withExceptionHandling {
-                    holeClient.getAllObjects(group)
+                    val foundGroup = holeClient.getGroup(group)
+
+                    if (!foundGroup.metadata.allowsListing()) {
+                        throw ListingNotAllowedException()
+                    }
+
+                    foundGroup.storageObjects.filter { obj ->
+                        obj.metadata.allowsListing()
+                    }.toSet()
                 }
             }
         }
@@ -141,7 +153,8 @@ class HoleFwServiceImpl : HoleFwService {
                     holeClient.getRawObject(id, out, encryptionKey, rawStorageObjectHandler)
                 } catch (e: HoleClientException) {
                     holeClient.getRawObject(
-                        holeClient.getAllObjects(group)
+                        holeClient.getGroup(group)
+                            .storageObjects
                             .filter {
                                 it.name == id
                             }.let {
@@ -183,4 +196,7 @@ class HoleFwServiceImpl : HoleFwService {
             cell(value)
         }
     }
+
+    private fun Meta.allowsListing() =
+        this.getValue(ALLOW_LISTING_PROPERTY)?.equals("true") ?: true
 }
