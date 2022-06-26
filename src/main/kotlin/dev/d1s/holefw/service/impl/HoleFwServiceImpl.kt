@@ -9,11 +9,9 @@ import dev.d1s.hole.client.entity.metadata.Meta
 import dev.d1s.hole.client.entity.metadata.getValue
 import dev.d1s.hole.client.entity.storageObject.RawStorageObject
 import dev.d1s.hole.client.entity.storageObject.StorageObject
+import dev.d1s.hole.client.entity.storageObject.StorageObjectGroup
 import dev.d1s.hole.client.exception.HoleClientException
-import dev.d1s.holefw.constant.ALLOW_LISTING_PROPERTY
-import dev.d1s.holefw.constant.CELL_PADDING_RIGHT
-import dev.d1s.holefw.constant.NO_VALUE
-import dev.d1s.holefw.constant.SHORT_VALUE_LENGTH
+import dev.d1s.holefw.constant.*
 import dev.d1s.holefw.exception.ListingNotAllowedException
 import dev.d1s.holefw.exception.MultipleStorageObjectsException
 import dev.d1s.holefw.exception.StorageObjectNotFoundByNameException
@@ -21,7 +19,9 @@ import dev.d1s.holefw.service.HoleFwService
 import dev.d1s.holefw.util.appendSeparator
 import dev.d1s.holefw.util.buildResponse
 import dev.d1s.holefw.util.withExceptionHandling
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.runBlocking
+import org.apache.tomcat.util.http.fileupload.IOUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import javax.servlet.http.HttpServletResponse
@@ -34,12 +34,12 @@ class HoleFwServiceImpl : HoleFwService {
     lateinit var holeClient: HoleClient
 
     override fun getAvailableGroups(): String = buildResponse {
-        var availableGroups: Set<String>
+        var availableGroups: Set<StorageObjectGroup>
 
         it.executionTime = runBlocking {
             measureTimeMillis {
                 availableGroups = withExceptionHandling {
-                    holeClient.getAllGroupNames()
+                    holeClient.getAllGroups()
                 }
             }
         }
@@ -51,7 +51,13 @@ class HoleFwServiceImpl : HoleFwService {
                 }
 
                 availableGroups.forEach { group ->
-                    row(group)
+                    row(
+                        group.name + (group.metadata.getValue(
+                            GROUP_DESCRIPTION_PROPERTY
+                        )?.let { desc ->
+                            " - $desc"
+                        } ?: "")
+                    )
                 }
 
                 if (availableGroups.isEmpty()) {
@@ -143,14 +149,14 @@ class HoleFwServiceImpl : HoleFwService {
         val rawStorageObjectHandler = fun(rawStorageObject: RawStorageObject) {
             content.contentType = rawStorageObject.contentType
             content.setContentLengthLong(rawStorageObject.contentLength)
+
+            IOUtils.copy(rawStorageObject.channel.toInputStream(), content.outputStream)
         }
 
         withExceptionHandling {
             runBlocking {
-                val out = content.outputStream
-
                 try {
-                    holeClient.getRawObject(id, out, encryptionKey, rawStorageObjectHandler)
+                    holeClient.getRawObject(id, encryptionKey, rawStorageObjectHandler)
                 } catch (e: HoleClientException) {
                     holeClient.getRawObject(
                         holeClient.getGroup(group)
@@ -168,7 +174,6 @@ class HoleFwServiceImpl : HoleFwService {
 
                                 it.first().id
                             },
-                        out,
                         encryptionKey,
                         rawStorageObjectHandler
                     )
