@@ -34,6 +34,8 @@ class HoleFwServiceImpl : HoleFwService {
     lateinit var holeClient: HoleClient
 
     override fun getAvailableGroups(): String = buildResponse {
+        it.hint = "Use $GET_OBJECTS_BY_GROUP_MAPPING path to get object listing by group."
+
         var availableGroups: Set<StorageObjectGroup>
 
         it.executionTime = runBlocking {
@@ -67,6 +69,9 @@ class HoleFwServiceImpl : HoleFwService {
     }
 
     override fun getObjectsByGroup(group: String): String = buildResponse {
+        it.hint = "Use $GET_RAW_OBJECT_MAPPING path to get object content." +
+                "\nYou can use object IDs and their names."
+
         var objects: Set<StorageObject>
 
         it.executionTime = runBlocking {

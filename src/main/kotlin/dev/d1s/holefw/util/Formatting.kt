@@ -5,18 +5,25 @@ import dev.d1s.holefw.constant.SEPARATOR
 import dev.d1s.teabag.stdlib.text.padding
 import kotlin.properties.Delegates
 
-class ExecutionTimeContainer {
-    var executionTime by Delegates.notNull<Long>()
+class ResponseMetadataContainer {
+    var executionTime: Long by Delegates.notNull()
+    var hint: String? = null
 }
 
-inline fun buildResponse(block: StringBuilder.(ExecutionTimeContainer) -> Unit) = buildString {
-    val executionTimeContainer = ExecutionTimeContainer()
+inline fun buildResponse(block: StringBuilder.(ResponseMetadataContainer) -> Unit) = buildString {
+    val responseMetadataContainer = ResponseMetadataContainer()
 
-    block(executionTimeContainer)
+    block(responseMetadataContainer)
 
     appendSeparator()
 
-    append("Done in ${executionTimeContainer.executionTime}ms")
+    appendLine("Done in ${responseMetadataContainer.executionTime}ms")
+
+    responseMetadataContainer.hint?.let {
+        appendLine()
+
+        append("Hint: $it")
+    }
 }.padding {
     top = PADDING
 
