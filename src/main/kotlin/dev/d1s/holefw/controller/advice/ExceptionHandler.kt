@@ -49,7 +49,11 @@ class ExceptionHandler {
                 it.executionTime = e.executionTime
 
                 append("Error: ")
-                append(message ?: e.message?.also { m -> println(m) } ?: "An error occurred.")
+                append(
+                    message ?: e.message ?: "An error occurred.".also {
+                        e.printStackTrace()
+                    }
+                )
             }
         )
 }
