@@ -115,11 +115,6 @@ class HoleFwServiceImpl : HoleFwService {
                     "Digest",
                     obj.digest.short()
                 )
-
-                rowWithIndent(
-                    "Last access",
-                    obj.accesses.firstOrNull()?.time?.toString() ?: NO_VALUE
-                )
             }
 
             append(renderedText)
