@@ -18,6 +18,7 @@ import dev.d1s.holefw.service.HoleFwService
 import dev.d1s.holefw.util.appendSeparator
 import dev.d1s.holefw.util.buildResponse
 import dev.d1s.holefw.util.withExceptionHandling
+import dev.d1s.teabag.stdlib.text.wrapLines
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.runBlocking
 import org.apache.tomcat.util.http.fileupload.IOUtils
@@ -54,7 +55,7 @@ class HoleFwServiceImpl : HoleFwService {
                         group.name + (group.getMetadataValue(
                             GROUP_DESCRIPTION_PROPERTY
                         )?.let { desc ->
-                            " - $desc"
+                            " - ${desc.wrapLines(DESCRIPTION_MAX_LINE_WIDTH)}"
                         } ?: "")
                     )
                 }
@@ -202,4 +203,8 @@ class HoleFwServiceImpl : HoleFwService {
         this.sortedBy {
             it.getMetadataValue(PRIORITY_PROPERTY)?.toIntOrNull() ?: Int.MAX_VALUE
         }.toSet()
+
+    private companion object {
+        private const val DESCRIPTION_MAX_LINE_WIDTH = 30
+    }
 }
