@@ -5,8 +5,7 @@ import com.jakewharton.picnic.TextAlignment
 import com.jakewharton.picnic.renderText
 import com.jakewharton.picnic.table
 import dev.d1s.hole.client.core.HoleClient
-import dev.d1s.hole.client.entity.metadata.Meta
-import dev.d1s.hole.client.entity.metadata.getValue
+import dev.d1s.hole.client.entity.MetadataAware
 import dev.d1s.hole.client.entity.storageObject.RawStorageObject
 import dev.d1s.hole.client.entity.storageObject.StorageObject
 import dev.d1s.hole.client.entity.storageObject.StorageObjectGroup
@@ -50,9 +49,9 @@ class HoleFwServiceImpl : HoleFwService {
                     row("Available groups")
                 }
 
-                availableGroups.forEach { group ->
+                availableGroups.sortedByPriority().forEach { group ->
                     row(
-                        group.name + (group.metadata.getValue(
+                        group.name + (group.getMetadataValue(
                             GROUP_DESCRIPTION_PROPERTY
                         )?.let { desc ->
                             " - $desc"
@@ -75,19 +74,18 @@ class HoleFwServiceImpl : HoleFwService {
                 objects = withExceptionHandling {
                     val foundGroup = holeClient.getGroup(group)
 
-                    if (!foundGroup.metadata.allowsListing()) {
+                    if (!foundGroup.allowsListing()) {
                         throw ListingNotAllowedException()
                     }
 
                     foundGroup.storageObjects.filter { obj ->
-                        obj.metadata.allowsListing()
+                        obj.allowsListing()
                     }.toSet()
                 }
             }
         }
 
-
-        objects.forEach { obj ->
+        objects.sortedByPriority().forEach { obj ->
             val renderedText = renderTable {
                 rowWithIndent(
                     "ID",
@@ -202,6 +200,11 @@ class HoleFwServiceImpl : HoleFwService {
         }
     }
 
-    private fun Meta.allowsListing() =
-        this.getValue(ALLOW_LISTING_PROPERTY)?.equals("true") ?: true
+    private fun MetadataAware.allowsListing() =
+        this.getMetadataValue(ALLOW_LISTING_PROPERTY)?.equals("true") ?: true
+
+    private fun <T : MetadataAware> Set<T>.sortedByPriority() =
+        this.sortedBy {
+            it.getMetadataValue(PRIORITY_PROPERTY)?.toIntOrNull() ?: Int.MAX_VALUE
+        }.toSet()
 }
