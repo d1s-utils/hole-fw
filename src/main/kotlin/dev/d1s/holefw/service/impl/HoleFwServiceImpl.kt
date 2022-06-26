@@ -47,16 +47,15 @@ class HoleFwServiceImpl : HoleFwService {
         append(
             renderTable {
                 header {
-                    row("Available groups")
+                    row("Group", "Description")
                 }
 
                 availableGroups.sortedByPriority().forEach { group ->
-                    row(
-                        group.name + (group.getMetadataValue(
-                            GROUP_DESCRIPTION_PROPERTY
-                        )?.let { desc ->
-                            " - ${desc.wrapLines(DESCRIPTION_MAX_LINE_WIDTH)}"
-                        } ?: "")
+                    rowWithIndent(
+                        group.name,
+                        group.getMetadataValue(GROUP_DESCRIPTION_PROPERTY)?.wrapLines(
+                            DESCRIPTION_MAX_LINE_WIDTH
+                        ) ?: NO_VALUE
                     )
                 }
 
@@ -205,6 +204,6 @@ class HoleFwServiceImpl : HoleFwService {
         }.toSet()
 
     private companion object {
-        private const val DESCRIPTION_MAX_LINE_WIDTH = 30
+        private const val DESCRIPTION_MAX_LINE_WIDTH = 70
     }
 }
